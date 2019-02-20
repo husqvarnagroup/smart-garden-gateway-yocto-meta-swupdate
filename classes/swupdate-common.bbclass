@@ -35,7 +35,7 @@ def swupdate_expand_bitbake_variables(d, s):
     with open(os.path.join(s, "sw-description"), 'r') as f:
         import re
         for line in f:
-            m = re.match(r"^(?P<before_placeholder>.+)@@(?P<bitbake_variable_name>\w+)@@(?P<after_placeholder>.+)$", line)
+            m = re.match(r"^(?P<before_placeholder>.+)@@(?P<bitbake_variable_name>[a-zA-Z0-9_-]+)@@(?P<after_placeholder>.+)$", line)
             if m:
                 bitbake_variable_value = d.getVar(m.group('bitbake_variable_name'), True)
                 if bitbake_variable_value:
