@@ -1,5 +1,5 @@
 SUMMARY="Image updater for Yocto projects"
-DESCRIPTION = "Application for automatic software update"
+DESCRIPTION = "Application for automatic software update from USB Pen"
 SECTION="swupdate"
 DEPENDS = "libconfig"
 LICENSE = "GPLv2+"
@@ -17,28 +17,16 @@ SRC_URI = "git://github.com/sbabic/swupdate.git;protocol=https \
      "
 
 INSANE_SKIP_${PN} = "ldflags"
-PACKAGES =+ "${PN}-www ${PN}-lua ${PN}-usb"
+PACKAGES =+ "${PN}-www ${PN}-lua"
 
-FILES_${PN} = " \
-    /usr/bin/ \
-    /lib/systemd/system/swupdate-progress.service \
-    "
 FILES_${PN}-lua += "${libdir}/lua/"
-FILES_${PN}-usb = " \
-    /lib/systemd/system/swupdate-usb@.service \
-    /etc/udev/rules.d/swupdate-usb.rules \
-    "
-FILES_${PN}-www = " \
-    /lib/systemd/system/swupdate.service \
-    /www/* \
-    "
+FILES_${PN}-www = "/www/*"
 
 S = "${WORKDIR}/git/"
 
 EXTRA_OEMAKE += " HOSTCC="${BUILD_CC}" HOSTCXX="${BUILD_CXX}" LD="${CC}" DESTDIR="${D}" V=1 ARCH=${TARGET_ARCH} CROSS_COMPILE=${TARGET_PREFIX} SKIP_STRIP=y"
 
 DEPENDS += "kern-tools-native"
-RDEPENDS_${PN}-usb += "${PN}-www"
 
 # returns all the elements from the src uri that are .cfg files
 def find_cfgs(d):
@@ -150,12 +138,8 @@ do_install () {
   fi
 }
 
-INITSCRIPT_PACKAGES = "${PN} ${PN}-www"
-INITSCRIPT_NAME_${PN} = "swupdate-progress"
-INITSCRIPT_PARAMS_${PN} = "defaults 70"
-INITSCRIPT_NAME_${PN}-www = "swupdate"
-INITSCRIPT_PARAMS_${PN}-www = "defaults 70"
+INITSCRIPT_NAME = "swupdate"
+INITSCRIPT_PARAMS = "defaults 70"
 
-SYSTEMD_SERVICE_${PN} = "swupdate-progress.service"
-SYSTEMD_SERVICE_${PN}-www = "swupdate.service"
-SYSTEMD_SERVICE_${PN}-usb = "swupdate-usb@.service"
+SYSTEMD_SERVICE_${PN} = "swupdate.service"
+SYSTEMD_SERVICE_${PN} += "swupdate-usb@.service swupdate-progress.service"
