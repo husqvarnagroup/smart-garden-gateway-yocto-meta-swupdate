@@ -16,27 +16,18 @@ SRC_URI = "git://github.com/sbabic/swupdate.git;protocol=https \
      file://swupdate-progress.service \
      "
 
-PACKAGES =+ "${PN}-www ${PN}-lua ${PN}-usb ${PN}-tools"
-
 INSANE_SKIP_${PN} = "ldflags"
+PACKAGES =+ "${PN}-www ${PN}-lua ${PN}-usb"
+
 FILES_${PN} = " \
-    ${bindir}/swupdate \
-    ${bindir}/swupdate-progress \
-    ${systemd_unitdir}/swupdate-progress.service \
+    /usr/bin/ \
+    /lib/systemd/system/swupdate-progress.service \
     "
-
-INSANE_SKIP_${PN}-tools = "ldflags"
-FILES_${PN}-tools = "${bindir}/swupdate-client \
-                    ${bindir}/swupdate-hawkbitcfg \
-                    ${bindir}/swupdate-sendtohawkbit"
-
 FILES_${PN}-lua += "${libdir}/lua/"
-
 FILES_${PN}-usb = " \
     /lib/systemd/system/swupdate-usb@.service \
     /etc/udev/rules.d/swupdate-usb.rules \
     "
-
 FILES_${PN}-www = " \
     /lib/systemd/system/swupdate.service \
     /www/* \
@@ -127,10 +118,16 @@ do_configure () {
 
 do_compile() {
   unset LDFLAGS
-  oe_runmake
+  oe_runmake swupdate_unstripped progress_unstripped
+  cp swupdate_unstripped swupdate
+  cp progress_unstripped progress
+
 }
 
 do_install () {
+
+  oe_runmake install
+
   install -m 0755 -d ${D}/www
   if [ -d ${S}/web-app ];then
 	cp -R --no-dereference --preserve=mode,links -v ${S}/examples/www/v2/* ${D}/www
@@ -151,13 +148,6 @@ do_install () {
     install -d ${D}${sysconfdir}/udev/rules.d
     install -m 0644 ${WORKDIR}/swupdate-usb.rules ${D}${sysconfdir}/udev/rules.d/
   fi
-
-  install -d ${D}${bindir}
-  install -m 0755 swupdate_unstripped ${D}${bindir}/swupdate
-  install -m 0755 tools/client ${D}${bindir}/swupdate-client
-  install -m 0755 tools/progress ${D}${bindir}/swupdate-progress
-  install -m 0755 tools/hawkbitcfg ${D}${bindir}/swupdate-hawkbitcfg
-  install -m 0755 tools/sendtohawkbit ${D}${bindir}/swupdate-sendtohawkbit
 }
 
 INITSCRIPT_PACKAGES = "${PN} ${PN}-www"
