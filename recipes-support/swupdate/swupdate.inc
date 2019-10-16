@@ -14,6 +14,7 @@ SRC_URI = "git://github.com/sbabic/swupdate.git;protocol=https \
      file://swupdate-usb.rules \
      file://swupdate-usb@.service \
      file://swupdate-progress.service \
+     file://systemd-tmpfiles-swupdate.conf \
      "
 
 INSANE_SKIP_${PN} = "ldflags"
@@ -21,6 +22,7 @@ PACKAGES =+ "${PN}-www ${PN}-lua"
 
 FILES_${PN}-lua += "${libdir}/lua/"
 FILES_${PN}-www = "/www/*"
+FILES_${PN} += "${libdir}/tmpfiles.d"
 
 S = "${WORKDIR}/git/"
 
@@ -72,7 +74,10 @@ python () {
 
     if 'CONFIG_UBOOT=y\n' in features:
         depends = d.getVar('DEPENDS', False)
-        d.setVar('DEPENDS', depends + ' u-boot-fw-utils')
+        if 'CONFIG_UBOOT_NEWAPI=y\n' in features:
+            d.setVar('DEPENDS', depends + ' libubootenv')
+        else:
+            d.setVar('DEPENDS', depends + ' u-boot-fw-utils')
 
     if 'CONFIG_DOWNLOAD=y\n' in features or 'CONFIG_SURICATTA=y\n' in features:
         depends = d.getVar('DEPENDS', False)
@@ -94,8 +99,20 @@ python () {
         depends = d.getVar('DEPENDS', False)
         d.setVar('DEPENDS', depends + ' libgpiod')
 
+    if 'CONFIG_SWUFORWARDER_HANDLER=y\n' in features:
+        depends = d.getVar('DEPENDS', False)
+        d.setVar('DEPENDS', depends + ' curl libwebsockets uriparser')
+
+    if 'CONFIG_RDIFFHANDLER=y\n' in features:
+        depends = d.getVar('DEPENDS', False)
+        d.setVar('DEPENDS', depends + ' librsync')
+
     if 'CONFIG_MONGOOSE_WEB_API_V2=y\n' in features:
         d.setVar('SWUPDATE_WWW', 'webapp')
+
+    if 'CONFIG_BOOTLOADER_EBG=y\n' in features:
+        depends = d.getVar('DEPENDS', False)
+        d.setVar('DEPENDS', depends + ' efibootguard')
 }
 
 do_configure () {
@@ -133,6 +150,8 @@ do_install () {
 
 
   if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
+    install -d ${D}${libdir}/tmpfiles.d
+    install -m 0644 ${WORKDIR}/systemd-tmpfiles-swupdate.conf ${D}${libdir}/tmpfiles.d/swupdate.conf
     install -d ${D}${sysconfdir}/udev/rules.d
     install -m 0644 ${WORKDIR}/swupdate-usb.rules ${D}${sysconfdir}/udev/rules.d/
   fi
